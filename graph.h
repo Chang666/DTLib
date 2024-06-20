@@ -450,6 +450,86 @@ struct Edge :public Object
             return toarray(ret);
         }
 
+        SharedPointer<Array<int>> Flyod(int x,int y,const E& LIMIT)//int ----->  SharedPointer<Array<int>>  返回最短路径值， 最短路径序列
+        {
+            LinkQueue<int > ret;//int ret=-1;  LinkQueue<int > ret=NULL;  =NULL
+            if((0<=x)&&(x<vCount())&&(0<=y)&&(y<vCount()))
+            {
+                DynamicArray<DynamicArray<E>> dist(vCount());
+                DynamicArray<DynamicArray<int>> path(vCount());//增加路径
+
+                for(int i=0;i<vCount();i++)
+                {
+                    dist[i].resize(vCount());
+                    path[i].resize(vCount());//
+                }
+                for(int i=0;i<vCount();i++)
+                {
+                    for(int j=0;j<vCount();j++)
+                    {
+                        if(isAdjacent(i,j))
+                        {
+                            dist[i][j]=getEdge(i,j);
+                            path[i][j]=j;//
+                        }
+                        else
+                        {
+                            dist[i][j]=LIMIT;
+                            path[i][j]=-1;//
+                        }
+
+                    }
+                }
+                for(int k=0;k<vCount();k++)
+                {
+                    for(int i=0;i<vCount();i++)
+                    {
+                        for(int j=0;j<vCount();j++)
+                        {
+                            if(dist[i][j]>(dist[i][k]+dist[k][j]))
+                            {
+                                   dist[i][j]=dist[i][k]+dist[k][j];
+                                   path[i][j]=path[i][k];//k;//i到j的第一个顶点 就是 i到k的第一个顶点
+                            }
+
+
+                        }
+                    }
+
+                }
+                //ret=dist[x][y];
+                while ((x!=-1)&&x!=y) //起点有效，起点终点不是一个点
+                {
+                   ret.add(x);
+                   x=path[x][y];
+//                   while (x!=-1)
+//                   {
+//                       ret.add(x);
+//                       x=path(x,y);
+
+//                   }
+                }
+                if(x!=-1)//加上终点
+                {
+                    ret.add(x);
+
+                }
+
+            }
+            else
+            {
+                THROW_EXCEPTION(InvalidParameterException,"index i,j is invalid ...");
+            }
+            if(ret.length()<2)//
+            {
+                THROW_EXCEPTION(ArithmeticException,"There is no path from i to j...");
+
+            }
+
+            return toarray(ret);//ret;
+
+        }
+
     };
 
 
