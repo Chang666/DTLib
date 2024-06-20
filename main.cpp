@@ -9,6 +9,7 @@
 #include"sharedpointer.h"
 #include"sort.h"
 #include"dtstring.h"
+#include <cstring>
 using namespace std;
 using namespace DTLib;
 
@@ -119,6 +120,40 @@ void DFS(Graph<V,E>& g,int v)
     DFS(g,v,visited);
 
 }
+/*
+template< typename V, typename E >
+Graph<V, E>& GraphEasy()
+{
+    static MatrixGraph<4, V, E> g;
+
+    g.setEdge(0, 1, 1);
+    g.setEdge(0, 2, 3);
+    g.setEdge(1, 2, 1);
+    g.setEdge(1, 3, 4);
+    g.setEdge(2, 3, 1);
+
+    return g;
+}
+
+template< typename V, typename E >
+Graph<V, E>& GraphComplex()
+{
+    static ListGraph<V, E> g(5);
+
+    g.setEdge(0, 1, 10);
+    g.setEdge(0, 3, 30);
+    g.setEdge(0, 4, 100);
+
+    g.setEdge(1, 2, 50);
+
+    g.setEdge(2, 4, 10);
+
+    g.setEdge(3, 2, 20);
+    g.setEdge(3, 4, 60);
+
+    return g;
+}*/
+
 template< typename V, typename E >
 Graph<V, E>& GraphEasy()
 {
@@ -151,16 +186,289 @@ Graph<V, E>& GraphComplex()
 
     return g;
 }
+
+template< typename V, typename E >
+Graph<V, E>& GraphSample()
+{
+    static ListGraph<V, E> g(3);
+
+    g.setEdge(0, 1, 4);
+    g.setEdge(0, 2, 11);
+
+    g.setEdge(1, 2, 2);
+    g.setEdge(1, 0, 6);
+
+    g.setEdge(2, 0, 3);
+
+    return g;
+}
+//要找全局最多顶点路径，先找 以各个顶点为起始点的局部最多顶点的路径    查找局部最多顶点路径 返回顶点树，记录数据到辅助数组
+int searchMaxPath(Graph<int,int>& g,int v,Array<int>& count,Array<LinkList<int>*>& path,Array<bool>& mark)//Array<int>& path
+{
+    int ret=0;
+    //int k=-1;
+    SharedPointer<Array<int>>sa=g.getAdjacent(v);
+    for(int i=0;i<sa->length();i++)
+    {
+        int num=0;
+        if(!mark[(*sa)[i]])
+        {
+            num=searchMaxPath(g,(*sa)[i],count,path,mark);//search_max_path
+
+        }
+        else
+        {
+            num=count[(*sa)[i]];
+        }
+        if(ret<num)
+        {
+            ret=num;
+            // path 改为链表指针  k=(*sa)[i];//记录路径  最短路径经过的第一个顶点
+        }
+    }
+
+    for(int i=0;i<sa->length();i++)//通过k赋值，变成插入链表
+    {
+        if(ret==count[(*sa)[i]])
+        {
+            path[v]->insert((*sa)[i]);//path[i]->insert((*sa)[i]); 笔误写错了！！！
+        }
+    }
+    ret++;//???相邻节点到自己 加一
+    count[v]=ret;//count[k]=ret;
+    //path 改为链表指针path[v]=k;//count[k]=ret;
+    mark[v]=true;//mark[k]=true;
+
+
+    return ret;
+
+}
+SharedPointer< Graph<int, int>> create_graph(int *a,int  len)
+{
+    ListGraph<int, int> *g=new ListGraph<int,int>(len);//  ListGraph<int, int> g
+    for(int i=0;i<len;i++)
+    {
+        g->setVertex(i,a[i]);
+    }
+
+    for(int i=0;i<len;i++)
+    {
+        for(int j=i+1;j<len;j++)
+        {
+            if(a[i]<=a[j])
+            {
+                g->setEdge(i,j,1);
+            }
+
+        }
+    }
+    return g;
+
+
+}
+
+void init_array(Array<int>& count,Array<LinkList<int>*>& path,Array<bool>& mark)//Array<int>& path
+{
+    for(int i=0;i<count.length();i++)
+    {
+        count[i]=0;
+//        path[i]=-1;
+//        mark[i]=false;
+    }
+    for(int i=0;i<path.length();i++)
+    {
+
+        path[i]=new LinkList<int>();//path[i]=-1;
+
+    }
+    for(int i=0;i<mark.length();i++)
+    {
+
+        mark[i]=false;
+    }
+}
+
+void search_max_path(Graph<int,int>& g,Array<int>& count,Array<LinkList<int>*>& path,Array<bool>& mark)//Array<int>&  path
+{
+    for(int i=0;i<g.vCount();i++)//??
+    {
+        if(!mark[i])
+        {
+            searchMaxPath(g,i,count,path,mark);//自己调用自己？？？  函数名字和输入参数相同，返回参数类型不同，可以重载？？？
+
+        }
+    }
+
+}
+void printPath(Graph<int,int>& g,int v,Array<LinkList<int>*>&  path,LinkList<int>& cp)//xind e  digui 回溯 为空就打印  LinkList<int>& cp递归要有，记录顶点号
+{
+    cp.insert(v);//插入，再删除
+    if(path[v]->length()>0)
+    {
+        for(path[v]->move(0);!path[v]->end();path[v]->next())//遍历链表
+        {
+             printPath(g,path[v]->current(),path,cp);
+        }
+    }
+    else//空的 真正的打印？？？
+    {
+        cout<<"Element:";
+        for(cp.move(0);!cp.end();cp.next())
+        {
+            cout<<g.getVertex(cp.current())<<" ";
+        }
+        cout<<endl;
+
+
+    }
+
+    cp.remove(cp.length()-1);
+
+
+}
+
+void print_max_path(Graph<int,int>& g,Array<int>& count,Array<LinkList<int>*>&  path)//Array<int>&  path
+{
+    int max=0;
+    LinkList<int> cp;
+    for(int i=0;i<count.length();i++)
+    {
+        if(max<count[i])
+        {
+            max=count[i];
+        }
+    }
+    cout<<"Len:"<<max<<endl;
+    for(int i=0;i<count.length();i++)
+    {
+        if(max==count[i])
+        {
+            /*cout<<"elegment:"<<g.getVertex(i)<<" ";
+            for(int j=path[i];j!=-1;j=path[j])//??
+            {
+                cout<<g.getVertex(j)<<" ";//???
+            }
+            cout<<endl;
+            */
+            printPath(g,i,path,cp);
+        }
+    }
+
+}
+void solution(int* a,int len)
+{
+    DynamicArray<int> count(len);
+    DynamicArray<LinkList<int>*> path(len);//DynamicArray<int> path(len);
+    DynamicArray<bool> mark(len);
+    SharedPointer< Graph<int, int>> g;
+    g = create_graph(a, len);
+    init_array(count, path, mark);
+    search_max_path(*g, count, path, mark);
+    print_max_path(*g,count, path);
+
+}
+
+
 int main()
 {
-    String s;
-    s="asdfsdfg";
-    for(int i=0;i<s.length();i++)
+    int a[]={1,2,6,4,5};//3,18,7,14,10,12,23,41,16,24
+    solution(a,sizeof(a)/sizeof(*a));
+//Len:6
+//elegment:3 7 10 12 16 24
+
+//Len:3
+//elegment:1 3 4   漏了1 3 5
+    //path的元素改成链表
+    /*
+    Graph<int,int>& g=GraphComplex<int ,int >();
+    SharedPointer<Array<int>> sa=g.Flyod(0,4,65535);
+    for(int i=0;i<sa->length();i++)
     {
-        cout<<s[i]<<endl;
+        cout<<(*sa)[i]<<" ";
     }
-    cout<<s.StartWith("as1d")<<endl;
-    cout<<s.EndOf("df2g")<<endl;
+    cout<<endl;*/
+
+    /*cout<<g.Flyod(0,2,65535)<<endl;
+    int a[3][3];
+
+    for(int i=0;i<g.vCount();i++)
+    {
+        for(int j=0;j<g.vCount();j++)
+        {
+            a[i][j]=g.Flyod(i,j,65535);
+
+            //cout<<g.Flyod(i,j,65535)<<" ";
+
+
+        }
+        cout<<endl;
+    }
+
+    for(int i=0;i<g.vCount();i++)
+    {
+        for(int j=0;j<g.vCount();j++)
+        {
+
+
+            cout<<a[i][j]<<" ";
+
+
+        }
+        cout<<endl;
+    }*/
+
+    /*
+9
+9 4 6
+5 9 2
+3 7 9
+
+*/
+    /*
+    String s;
+    s=" avc  ";
+    //s=s.trim();
+
+    cout<<s.trim().str()<<endl;
+
+    if(s.trim().insert(0,"abc").StartWith("ab")&&s.EndOf("vc"))
+    {
+        cout<<s.str()<<endl;
+    }
+     cout<<"kmp:"<<s.IndexOf("v")<<endl;
+     String s1="abcdef";
+     //cout<<s1.remove("f").str()<<endl;
+     String s2="abc";
+     String s3=s1-s2;
+     cout<<s1.str()<<endl;
+     cout<<s2.str()<<endl;
+     cout<<s3.str()<<endl;
+     //s3-="f";
+     cout<<s3.str()<<endl;
+     //s3-=s3;
+     cout<<"["<<s3.str()<<"]"<<endl;
+     String s4="abc";
+     cout<<s4.replace(s2,s3).str()<<endl;
+     cout<<"substring:"<<endl;
+     String s5="abcedfg";
+     cout<<s5.sub(3,20).str()<<endl;*/
+
+/*
+    int * pmt=String::make_pmt("ababax");
+    int len=strlen("ababax");
+    for(int i=0;i<len;i++)
+    {
+        cout<<i<<":"<<pmt[i]<<endl;
+    }
+
+    cout<<"kmp:"<<String::kmp("abcdef","def")<<endl; */
+
+//    for(int i=0;i<s.length();i++)
+//    {
+//        cout<<s[i]<<endl;
+//    }
+//    cout<<s.StartWith("as1d")<<endl;
+//    cout<<s.EndOf("df2g")<<endl;
     /*
     Graph<int, int>& g = GraphComplex<int, int>();
         SharedPointer< Array<int> > p = g.dijkstra(0, 4, 65535);
